@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OppaCut AI - Analisis & Rekomendasi Gaya Rambut Cowok</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            50: '#f0f4f8',
+                            100: '#dbeafe',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#0b0f19',
+                        },
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Leaflet Map JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- html2canvas for Download Feature -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #fbbf24;
+            border-radius: 4px;
+        }
+        /* Animated scanline effect */
+        @keyframes scan {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
+        .scan-line {
+            animation: scan 3s linear infinite;
+        }
+    </style>
+</head>
+<body class="text-navy-900 selection:bg-gold-400 selection:text-navy-950">
+
+    <!-- Custom Notification Toast -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-y-[-100px] opacity-0 transition-all duration-300 bg-navy-900 text-white border-l-4 border-gold-500 px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+        <i id="toast-icon" class="fa-solid fa-circle-info text-gold-500 text-lg"></i>
+        <span id="toast-message" class="text-sm font-semibold">Notifikasi</span>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-40 bg-navy-950 text-white border-b border-navy-800 backdrop-blur-md bg-opacity-95">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-gold-500 to-amber-400 p-2.5 rounded-xl shadow-lg shadow-gold-500/20">
+                    <i class="fa-solid fa-scissors text-navy-950 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-gold-400 bg-clip-text text-transparent">OppaCut AI</h1>
+                    <p class="text-[10px] text-slate-400 font-medium tracking-widest uppercase">Premium Hair Analyzer</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-300">
+                <a href="#analyzer-section" class="hover:text-gold-400 transition-colors">AI Analisis</a>
+                <a href="#how-it-works" class="hover:text-gold-400 transition-colors">Cara Kerja</a>
+                <a href="#barber-finder" class="hover:text-gold-400 transition-colors">Cari Barber</a>
+            </nav>
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-semibold bg-gold-500/10 text-gold-400 border border-gold-500/20 animate-pulse">
+                    <span class="h-2 w-2 rounded-full bg-gold-400"></span> Live AI Mode
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative bg-gradient-to-b from-navy-950 to-navy-900 text-white py-16 px-4 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-gold-500/10 via-transparent to-transparent opacity-70"></div>
+        <div class="max-w-5xl mx-auto text-center relative z-10">
+            <span class="inline-block bg-navy-800 text-gold-400 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full border border-navy-700 mb-6 shadow-inner">
+                💇‍♂️ Versi Oppa (Gaya Rambut Cowok Korea)
+            </span>
+            <h2 class="text-4xl sm:text-6xl font-black tracking-tight mb-6 leading-tight">
+                Temukan Gaya Rambut <span class="bg-gradient-to-r from-gold-400 via-amber-300 to-yellow-500 bg-clip-text text-transparent">Oppa Terbaikmu</span> Dengan AI
+            </h2>
+            <p class="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
+                Cukup unggah foto selfie-mu, AI kami akan menganalisis bentuk wajah, tekstur rambut, dan memberikan rekomendasi potongan rambut Korea paling presisi yang cocok dengan karakter unikmu.
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="#analyzer-section" class="px-8 py-4 bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-600 hover:to-amber-600 text-navy-950 font-bold rounded-2xl shadow-xl shadow-gold-500/20 transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Mulai Analisis Sekarang
+                </a>
+                <a href="#barber-finder" class="px-8 py-4 bg-navy-800/80 hover:bg-navy-800 text-white font-semibold rounded-2xl border border-navy-700/60 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-map-location-dot text-gold-400"></i> Cari Barber Terdekat
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Analyzer Section -->
+    <section id="analyzer-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+            
+            <!-- Left Side: Upload Panel -->
+            <div class="lg:col-span-5 bg-white rounded-3xl shadow-xl border border-slate-100 p-8">
+                <h3 class="text-xl font-bold mb-2 flex items-center gap-2 text-navy-950">
+                    <i class="fa-solid fa-camera text-gold-500"></i> Unggah Foto Wajahmu
+                </h3>
+                <p class="text-slate-500 text-sm mb-6">Pastikan wajah menghadap ke depan dengan pencahayaan yang terang untuk hasil analisis maksimal.</p>
+
+                <!-- Drag & Drop Container -->
+                <div id="dropzone" class="border-2 border-dashed border-slate-300 hover:border-gold-500 bg-slate-50 hover:bg-gold-500/5 transition-all duration-300 rounded-2xl p-8 text-center cursor-pointer relative overflow-hidden group">
+                    <input type="file" id="file-input" accept="image/*" class="hidden">
+                    
+                    <!-- Before Upload State -->
+                    <div id="upload-prompt" class="space-y-4 py-8">
+                        <div class="mx-auto w-16 h-16 bg-navy-100 group-hover:bg-gold-100 rounded-2xl flex items-center justify-center transition-colors">
+                            <i class="fa-solid fa-cloud-arrow-up text-navy-800 group-hover:text-gold-600 text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-navy-950">Klik untuk memilih atau seret foto ke sini</p>
+                            <p class="text-xs text-slate-400 mt-1">Mendukung JPEG, PNG hingga 10MB</p>
+                        </div>
+                    </div>
+
+                    <!-- Image Preview & Scan Line Overlay -->
+                    <div id="preview-container" class="hidden relative rounded-xl overflow-hidden aspect-[3/4] bg-navy-950">
+                        <img id="image-preview" class="w-full h-full object-cover" src="" alt="Selfie Preview">
+                        
+                        <!-- AI Scanning Overlay Effect -->
+                        <div id="scanning-overlay" class="hidden absolute inset-0 bg-gradient-to-b from-transparent via-gold-500/30 to-transparent">
+                            <div class="scan-line absolute left-0 right-0 h-1 bg-gold-400 shadow-[0_0_15px_rgba(251,191,36,0.8)]"></div>
+                            <div class="absolute inset-0 bg-navy-950/20 backdrop-blur-[1px] flex items-center justify-center">
+                                <div class="bg-navy-950/80 px-6 py-3 rounded-full border border-gold-500/40 shadow-2xl flex items-center gap-3">
+                                    <i class="fa-solid fa-circle-notch fa-spin text-gold-400 text-lg"></i>
+                                    <span class="text-xs font-bold text-white tracking-widest uppercase">Menganalisis Wajah & Rambut...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button id="analyze-btn" disabled class="w-full mt-6 py-4 px-6 bg-slate-200 text-slate-500 font-bold rounded-2xl transition-all flex items-center justify-center gap-2 cursor-not-allowed">
+                    <i class="fa-solid fa-circle-nodes"></i> Mulai AI Analisis Gaya Rambut
+                </button>
+
+                <div class="mt-6 p-4 bg-amber-50 border border-amber-200/60 rounded-xl flex gap-3 text-xs text-amber-800 leading-relaxed">
+                    <i class="fa-solid fa-shield-halved text-lg text-amber-600 shrink-0"></i>
+                    <p><strong>Privasi Dijamin Aman:</strong> Foto Anda hanya dikirim ke sistem kecerdasan buatan untuk analisis real-time dan tidak akan disimpan secara permanen di server kami.</p>
+                </div>
+            </div>
+
+            <!-- Right Side: AI Results / Onboarding Placeholder -->
+            <div class="lg:col-span-7">
+                
+                <!-- Initial State Placeholder -->
+                <div id="results-placeholder" class="bg-white rounded-3xl shadow-xl border border-slate-100 p-12 text-center flex flex-col items-center justify-center h-full min-h-[500px]">
+                    <div class="w-24 h-24 bg-gold-500/10 rounded-full flex items-center justify-center mb-6 text-gold-500 text-4xl">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-navy-950 mb-3">Menunggu Foto Anda</h3>
+                    <p class="text-slate-500 text-sm max-w-md mx-auto leading-relaxed">
+                        Silakan unggah foto selfie Anda di panel sebelah kiri terlebih dahulu. AI kami akan memproses detail fitur wajah Anda dalam hitungan detik.
+                    </p>
+                </div>
+
+                <!-- AI Results Container (Infographic Card) -->
+                <div id="results-container" class="hidden space-y-6">
+                    
+                    <!-- The Printable/Downloadable Card Area -->
+                    <div id="downloadable-card" class="bg-white rounded-3xl shadow-2xl border-4 border-navy-950 p-6 md:p-8 relative overflow-hidden">
+                        
+                        <!-- Watermark / Background accents -->
+                        <div class="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-gold-500/5 to-transparent rounded-full -mr-16 -mt-16"></div>
+                        <div class="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-navy-50/50 to-transparent rounded-full -ml-24 -mb-24"></div>
+
+                        <!-- Card Header -->
+                        <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b-2 border-dashed border-slate-200 pb-6 mb-6 gap-4">
+                            <div>
+                                <span class="bg-navy-900 text-gold-400 text-[10px] font-extrabold px-3 py-1.5 rounded-md uppercase tracking-wider">Hasil Analisis Premium</span>
+                                <h4 class="text-2xl font-black text-navy-950 mt-2">ANALISIS & REKOMENDASI GAYA RAMBUT</h4>
+                                <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Versi Oppa (Cowok) • Didukung AI Pintar</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="bg-navy-950 text-white py-1 px-3 rounded-lg text-right">
+                                    <p class="text-[9px] text-slate-400 uppercase tracking-widest">Sistem Kecocokan</p>
+                                    <p class="text-sm font-bold text-gold-400">98.4% Match</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Main Grid of the Infographic Card -->
+                        <div class="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                            
+                            <!-- Left: User Photo + Structural Attributes -->
+                            <div class="md:col-span-5 space-y-4">
+                                <div class="relative rounded-2xl overflow-hidden aspect-[3/4] border-2 border-navy-950 bg-navy-900 shadow-lg">
+                                    <img id="card-photo" class="w-full h-full object-cover" src="" alt="Analyzed Photo">
+                                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-navy-950 to-transparent p-4">
+                                        <p class="text-xs text-gold-400 font-semibold uppercase tracking-widest">Model Analisis</p>
+                                        <p class="text-white text-sm font-bold">Wajah & Struktur Anda</p>
+                                    </div>
+                                </div>
+
+                                <!-- Face Characteristics -->
+                                <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                                    <h5 class="text-xs font-bold text-navy-950 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-sliders text-gold-500"></i> Karakteristik Wajah & Rambut
+                                    </h5>
+                                    <ul class="space-y-2 text-xs">
+                                        <li class="flex justify-between py-1 border-b border-slate-200/50">
+                                            <span class="text-slate-500">Bentuk Wajah</span>
+                                            <span id="res-face-shape" class="font-bold text-navy-950">Menghitung...</span>
+                                        </li>
+                                        <li class="flex justify-between py-1 border-b border-slate-200/50">
+                                            <span class="text-slate-500">Tekstur Rambut</span>
+                                            <span id="res-hair-texture" class="font-bold text-navy-950">Menghitung...</span>
+                                        </li>
+                                        <li class="flex justify-between py-1">
+                                            <span class="text-slate-500">Ciri Khas</span>
+                                            <span id="res-unique-features" class="font-bold text-navy-950 text-right max-w-[150px] truncate">Menghitung...</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Right: The AI Recommendation Details -->
+                            <div class="md:col-span-7 space-y-4">
+                                
+                                <!-- Top Winner Style Ribbon -->
+                                <div class="bg-gradient-to-r from-navy-950 to-navy-900 text-white rounded-2xl p-5 border border-navy-800 relative overflow-hidden shadow-xl">
+                                    <div class="absolute top-0 right-0 bg-gold-500 text-navy-950 text-[10px] font-black px-4 py-1.5 rounded-bl-xl uppercase tracking-wider">
+                                        Pilihan Terbaik
+                                    </div>
+                                    <p class="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Gaya Rambut Direkomendasikan:</p>
+                                    <h4 id="res-recommended-style" class="text-2xl font-black text-gold-400 mt-1">TWO-BLOCK CUT</h4>
+                                    
+                                    <!-- Star rating -->
+                                    <div class="flex items-center gap-1 mt-1">
+                                        <i class="fa-solid fa-star text-gold-400 text-xs"></i>
+                                        <i class="fa-solid fa-star text-gold-400 text-xs"></i>
+                                        <i class="fa-solid fa-star text-gold-400 text-xs"></i>
+                                        <i class="fa-solid fa-star text-gold-400 text-xs"></i>
+                                        <i class="fa-solid fa-star text-gold-400 text-xs"></i>
+                                        <span class="text-[11px] text-slate-300 ml-2 font-medium">(Skor Kecocokan Sempurna)</span>
+                                    </div>
+
+                                    <p id="res-style-reason" class="text-xs text-slate-300 mt-3 leading-relaxed">
+                                        Sangat seimbang untuk bentuk wajahmu. Memberikan kesan yang rapi, segar, maskulin, dan sangat modern.
+                                    </p>
+                                </div>
+
+                                <!-- Look Character Tags -->
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                    <h5 class="text-xs font-bold text-navy-950 uppercase tracking-wider mb-2.5">Karakter Look yang Cocok</h5>
+                                    <div id="res-look-tags" class="flex flex-wrap gap-2">
+                                        <!-- Will be filled by AI dynamically -->
+                                    </div>
+                                </div>
+
+                                <!-- Hair Length & Do's & Don'ts Grid -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    
+                                    <!-- Recommended Hair Length -->
+                                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                        <h5 class="text-xs font-bold text-navy-950 uppercase tracking-wider mb-2.5">Panjang Rambut Ideal</h5>
+                                        <ul class="space-y-1.5 text-xs">
+                                            <li class="flex justify-between"><span class="text-slate-500">Bagian Atas:</span> <span id="res-length-top" class="font-semibold text-navy-950">5-8 cm</span></li>
+                                            <li class="flex justify-between"><span class="text-slate-500">Bagian Samping:</span> <span id="res-length-side" class="font-semibold text-navy-950">6-12 mm</span></li>
+                                            <li class="flex justify-between"><span class="text-slate-500">Bagian Belakang:</span> <span id="res-length-back" class="font-semibold text-navy-950">6-12 mm</span></li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- Styling Difficulty -->
+                                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
+                                        <div>
+                                            <h5 class="text-xs font-bold text-navy-950 uppercase tracking-wider mb-1.5">Tingkat Kesulitan</h5>
+                                            <div id="res-styling-difficulty" class="flex items-center gap-1 text-gold-500">
+                                                <!-- Dynamic Stars -->
+                                            </div>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500 mt-2 leading-tight">Gunakan sisir bulat & hair dryer untuk bervolume.</p>
+                                    </div>
+
+                                </div>
+
+                                <!-- Do's & Don'ts -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-200/50 text-xs">
+                                        <h5 class="font-bold text-emerald-800 flex items-center gap-1.5 mb-2">
+                                            <i class="fa-solid fa-circle-check text-emerald-600"></i> LAKUKAN (DO'S)
+                                        </h5>
+                                        <ul id="res-dos" class="space-y-1 text-emerald-700 list-disc list-inside">
+                                            <!-- Dynamically populated -->
+                                        </ul>
+                                    </div>
+                                    <div class="bg-rose-50/50 p-4 rounded-xl border border-rose-200/50 text-xs">
+                                        <h5 class="font-bold text-rose-800 flex items-center gap-1.5 mb-2">
+                                            <i class="fa-solid fa-circle-xmark text-rose-600"></i> HINDARI (DON'TS)
+                                        </h5>
+                                        <ul id="res-donts" class="space-y-1 text-rose-700 list-disc list-inside">
+                                            <!-- Dynamically populated -->
+                                        </ul>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <!-- Card Footer -->
+                        <div class="border-t border-slate-100 pt-5 mt-6 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-400 gap-3">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-scissors text-gold-500"></i>
+                                <span>Hasil analisis otomatis oleh model OppaCut AI Generatif.</span>
+                            </div>
+                            <span class="font-mono tracking-wider text-[10px] bg-slate-100 px-2 py-1 rounded">OPPACUT-AI-2026</span>
+                        </div>
+
+                    </div>
+
+                    <!-- Actions Bar Below Card -->
+                    <div class="flex flex-wrap justify-between items-center gap-4 bg-white p-5 rounded-2xl shadow-lg border border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-semibold text-slate-600">Suka dengan hasil analisamu?</span>
+                        </div>
+                        <div class="flex gap-3">
+                            <button id="download-card-btn" class="px-6 py-3 bg-navy-950 hover:bg-navy-900 text-white font-bold rounded-xl flex items-center gap-2 transition-all shadow-md">
+                                <i class="fa-solid fa-download text-gold-400"></i> Unduh Kartu Analisis (PNG)
+                            </button>
+                            <button id="re-analyze-btn" class="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all">
+                                <i class="fa-solid fa-arrows-rotate"></i> Coba Foto Lain
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Product Recommendations Section -->
+    <section class="bg-slate-100 py-16 px-4">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12">
+                <span class="text-xs font-bold text-gold-600 bg-gold-100 px-3 py-1.5 rounded-full uppercase tracking-wider">Perawatan Penunjang</span>
+                <h3 class="text-3xl font-extrabold text-navy-950 mt-3">Produk Styling Rekomendasi Barber</h3>
+                <p class="text-slate-500 text-sm mt-2">Dapatkan hasil styling yang tahan lama, natural, dan berkilau sepanjang hari.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Product 1 -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/60 flex flex-col justify-between">
+                    <div>
+                        <div class="w-full aspect-square bg-slate-50 rounded-xl mb-4 flex items-center justify-center p-6">
+                            <i class="fa-solid fa-prescription-bottle text-5xl text-navy-800"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider bg-navy-100 text-navy-800 px-2 py-1 rounded">Matte Clay</span>
+                        <h4 class="font-bold text-navy-950 mt-2">Premium Matte Clay</h4>
+                        <p class="text-xs text-slate-500 mt-1">Sangat pas untuk Two-Block atau Textured Crop. Memberikan daya rekat kuat tanpa efek berkilau basah.</p>
+                    </div>
+                    <div class="border-t border-slate-100 pt-4 mt-4 flex justify-between items-center">
+                        <span class="text-xs font-semibold text-slate-400">Hasil Natural</span>
+                        <span class="text-sm font-bold text-gold-600">Daya Rekat Tinggi</span>
+                    </div>
+                </div>
+
+                <!-- Product 2 -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/60 flex flex-col justify-between">
+                    <div>
+                        <div class="w-full aspect-square bg-slate-50 rounded-xl mb-4 flex items-center justify-center p-6">
+                            <i class="fa-solid fa-jar-wheat text-5xl text-navy-800"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider bg-navy-100 text-navy-800 px-2 py-1 rounded">Light Pomade</span>
+                        <h4 class="font-bold text-navy-950 mt-2">Water-Based Light Pomade</h4>
+                        <p class="text-xs text-slate-500 mt-1">Sempurna untuk Comma Hair yang membutuhkan tekstur natural, kilau sedang, dan mudah ditata ulang.</p>
+                    </div>
+                    <div class="border-t border-slate-100 pt-4 mt-4 flex justify-between items-center">
+                        <span class="text-xs font-semibold text-slate-400">Kilau Sedang</span>
+                        <span class="text-sm font-bold text-gold-600">Mudah Dibilas</span>
+                    </div>
+                </div>
+
+                <!-- Product 3 -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/60 flex flex-col justify-between">
+                    <div>
+                        <div class="w-full aspect-square bg-slate-50 rounded-xl mb-4 flex items-center justify-center p-6">
+                            <i class="fa-solid fa-spray-can text-5xl text-navy-800"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider bg-navy-100 text-navy-800 px-2 py-1 rounded">Sea Salt Spray</span>
+                        <h4 class="font-bold text-navy-950 mt-2">Ocean Waves Sea Salt Spray</h4>
+                        <p class="text-xs text-slate-500 mt-1">Memberikan tekstur bergelombang alami dan volume ekstra sebelum proses pengeringan rambut.</p>
+                    </div>
+                    <div class="border-t border-slate-100 pt-4 mt-4 flex justify-between items-center">
+                        <span class="text-xs font-semibold text-slate-400">Efek Bergelombang</span>
+                        <span class="text-sm font-bold text-gold-600">Tekstur Alami</span>
+                    </div>
+                </div>
+
+                <!-- Product 4 -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/60 flex flex-col justify-between">
+                    <div>
+                        <div class="w-full aspect-square bg-slate-50 rounded-xl mb-4 flex items-center justify-center p-6">
+                            <i class="fa-solid fa-spray-can-sparkles text-5xl text-navy-800"></i>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider bg-navy-100 text-navy-800 px-2 py-1 rounded">Hair Spray</span>
+                        <h4 class="font-bold text-navy-950 mt-2">Ultra Lock Hair Spray</h4>
+                        <p class="text-xs text-slate-500 mt-1">Mengunci posisi lekukan rambut Curtain atau Comma Hair agar tetap kokoh seharian penuh.</p>
+                    </div>
+                    <div class="border-t border-slate-100 pt-4 mt-4 flex justify-between items-center">
+                        <span class="text-xs font-semibold text-slate-400">Daya Kunci Ekstra</span>
+                        <span class="text-sm font-bold text-gold-600">Tahan Angin</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Map and Barbershop Finder Section -->
+    <section id="barber-finder" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="text-center mb-12">
+            <span class="text-xs font-bold text-gold-600 bg-gold-100 px-3 py-1.5 rounded-full uppercase tracking-wider">Peta Interaktif</span>
+            <h3 class="text-3xl font-extrabold text-navy-950 mt-3">Rekomendasi Barbershop Terdekat</h3>
+            <p class="text-slate-500 text-sm mt-2">Dapatkan gaya rambut barumu sekarang juga. Cari lokasi secara manual atau gunakan GPS untuk melacak barbershop terbaik di sekitarmu.</p>
+        </div>
+
+        <!-- Persistent Manual Search Address Bar -->
+        <div class="max-w-xl mx-auto mb-6">
+            <div class="bg-white p-2 rounded-2xl shadow-md border border-slate-200 flex gap-2">
+                <input type="text" id="manual-search-input" placeholder="Masukkan nama kota/daerah Anda (misal: Jakarta Selatan, Surabaya...)" class="flex-1 px-4 py-2.5 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500 text-navy-950">
+                <button id="manual-search-btn" class="px-6 py-2.5 bg-navy-950 hover:bg-navy-900 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all">
+                    <i class="fa-solid fa-magnifying-glass text-gold-400"></i> Cari
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+            
+            <!-- Left: Live Interactive Map -->
+            <div class="lg:col-span-8 rounded-3xl overflow-hidden border-2 border-slate-200/80 shadow-lg min-h-[400px] lg:min-h-[500px] relative">
+                <div id="map" class="w-full h-full z-10" style="min-height: 450px;"></div>
+                
+                <!-- Map loading state overlay -->
+                <div id="map-loader" class="absolute inset-0 bg-navy-950/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-white p-6 text-center">
+                    <div class="w-16 h-16 bg-gold-500/10 rounded-full flex items-center justify-center mb-4 text-gold-400 text-2xl animate-bounce">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                    </div>
+                    <h4 class="text-lg font-bold">Mendeteksi Lokasimu...</h4>
+                    <p class="text-slate-400 text-xs max-w-sm mt-1.5 leading-relaxed">
+                        Jika deteksi GPS otomatis diblokir oleh browser atau iframe, silakan ketik nama kota Anda di kolom di bawah ini.
+                    </p>
+                    
+                    <!-- Search inside loading overlay -->
+                    <div class="mt-4 w-full max-w-xs flex gap-2">
+                        <input type="text" id="loader-search-input" placeholder="Nama Kota (cth: Bandung)" class="flex-1 px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-gold-500">
+                        <button id="loader-search-btn" class="px-4 py-2 bg-gold-500 hover:bg-gold-600 text-navy-950 font-bold rounded-xl text-xs transition-all">Cari</button>
+                    </div>
+
+                    <div class="my-3 text-slate-400 text-xs">— atau —</div>
+
+                    <button id="get-location-btn" class="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all border border-white/20">
+                        <i class="fa-solid fa-location-crosshairs text-gold-400"></i> Coba Deteksi GPS Lagi
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: List of Nearby Barbershops -->
+            <div class="lg:col-span-4 bg-white rounded-3xl shadow-lg border border-slate-100 p-6 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                        <h4 class="font-extrabold text-navy-950 flex items-center gap-2">
+                            <i class="fa-solid fa-shop text-gold-500"></i> Barber Sekitar Anda
+                        </h4>
+                        <span id="barber-count" class="bg-navy-100 text-navy-800 text-xs font-bold px-2.5 py-1 rounded-full">0 Ditemukan</span>
+                    </div>
+
+                    <!-- Scrollable list container -->
+                    <div id="barber-list" class="space-y-3.5 max-h-[380px] overflow-y-auto pr-1">
+                        <!-- Placeholder/Initial empty state -->
+                        <div class="text-center py-12 text-slate-400 text-xs flex flex-col items-center justify-center">
+                            <i class="fa-solid fa-location-dot text-3xl mb-3 text-slate-300"></i>
+                            <p>Silakan cari nama daerah atau izinkan lokasi untuk memuat barbershop terdekat.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-4 mt-4">
+                    <p class="text-[11px] text-slate-400 leading-relaxed">
+                        Data barbershop diambil secara dinamis dari database global peta dunia terbuka **OpenStreetMap (OSM)** untuk akurasi lokasi terbaik di seluruh kota di Indonesia.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Tips From Barber Section -->
+    <section class="bg-navy-950 text-white py-16 px-4">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div class="lg:col-span-5 relative">
+                <div class="border-4 border-gold-400 rounded-3xl overflow-hidden aspect-[4/3] relative shadow-2xl">
+                    <img class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&q=80&w=600" alt="Barbershop Aesthetic">
+                    <div class="absolute inset-0 bg-gradient-to-t from-navy-950 via-transparent to-transparent"></div>
+                </div>
+                <!-- Mini card accent overlay -->
+                <div class="absolute -bottom-6 -right-6 bg-gold-500 text-navy-950 p-5 rounded-2xl shadow-2xl max-w-[200px] border border-white/20">
+                    <h5 class="font-extrabold text-sm uppercase">Oppa Cut Korea</h5>
+                    <p class="text-[10px] font-semibold mt-1">Potongan rambut yang rapi, bersih, dan berdimensi alami.</p>
+                </div>
+            </div>
+            
+            <div class="lg:col-span-7 space-y-6">
+                <span class="text-xs font-extrabold text-gold-400 bg-navy-800 px-4 py-2 rounded-full border border-navy-700 uppercase tracking-widest">Tips Profesional Barber</span>
+                <h3 class="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
+                    Rekomendasi Perawatan Dari <span class="text-gold-400">Stylist Korea</span>
+                </h3>
+                <div class="space-y-4">
+                    <div class="flex gap-4">
+                        <div class="h-8 w-8 rounded-full bg-gold-500/10 text-gold-400 flex items-center justify-center shrink-0 border border-gold-500/20">
+                            <span class="text-xs font-bold">1</span>
+                        </div>
+                        <div>
+                            <h5 class="font-bold text-sm">Pemotongan Teratur</h5>
+                            <p class="text-xs text-slate-400 mt-1">Potong atau rapikan rambut Anda setiap 3-4 minggu sekali agar bentuk potongan (khususnya Two-block) tetap terjaga dengan rapi.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <div class="h-8 w-8 rounded-full bg-gold-500/10 text-gold-400 flex items-center justify-center shrink-0 border border-gold-500/20">
+                            <span class="text-xs font-bold">2</span>
+                        </div>
+                        <div>
+                            <h5 class="font-bold text-sm">Gunakan Produk Sesuai Kebutuhan</h5>
+                            <p class="text-xs text-slate-400 mt-1">Jangan berlebihan dalam mengaplikasikan pomade atau clay. Mulailah dari seujung jari kelingking terlebih dahulu agar tidak membuat rambut lepek.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <div class="h-8 w-8 rounded-full bg-gold-500/10 text-gold-400 flex items-center justify-center shrink-0 border border-gold-500/20">
+                            <span class="text-xs font-bold">3</span>
+                        </div>
+                        <div>
+                            <h5 class="font-bold text-sm">Jaga Kebersihan Kulit Kepala</h5>
+                            <p class="text-xs text-slate-400 mt-1">Setelah menggunakan produk styling padat seperti wax atau clay, pastikan selalu keramas sebelum tidur agar pori-pori kulit kepala tetap bernafas dengan sehat.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-navy-950 text-slate-400 py-12 border-t border-navy-900 px-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-3">
+                <div class="bg-gold-500 p-2 rounded-lg text-navy-950">
+                    <i class="fa-solid fa-scissors"></i>
+                </div>
+                <div>
+                    <h4 class="text-white font-extrabold text-sm tracking-widest uppercase">OppaCut AI</h4>
+                    <p class="text-[10px]">Styling Rambut Cowok Korea Masa Kini</p>
+                </div>
+            </div>
+            <p class="text-xs text-center md:text-right">
+                &copy; 2026 OppaCut AI. Dibuat menggunakan kecerdasan buatan paling mutakhir untuk melayani Anda.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Core App Logic (JavaScript) -->
+    <script>
+        // DOM Elements
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('file-input');
+        const uploadPrompt = document.getElementById('upload-prompt');
+        const previewContainer = document.getElementById('preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const scanningOverlay = document.getElementById('scanning-overlay');
+        const resultsPlaceholder = document.getElementById('results-placeholder');
+        const resultsContainer = document.getElementById('results-container');
+        const cardPhoto = document.getElementById('card-photo');
+        
+        // Card Result Elements
+        const resFaceShape = document.getElementById('res-face-shape');
+        const resHairTexture = document.getElementById('res-hair-texture');
+        const resUniqueFeatures = document.getElementById('res-unique-features');
+        const resRecommendedStyle = document.getElementById('res-recommended-style');
+        const resStyleReason = document.getElementById('res-style-reason');
+        const resLookTags = document.getElementById('res-look-tags');
+        const resLengthTop = document.getElementById('res-length-top');
+        const resLengthSide = document.getElementById('res-length-side');
+        const resLengthBack = document.getElementById('res-length-back');
+        const resStylingDifficulty = document.getElementById('res-styling-difficulty');
+        const resDos = document.getElementById('res-dos');
+        const resDonts = document.getElementById('res-donts');
+
+        // Action Buttons
+        const downloadCardBtn = document.getElementById('download-card-btn');
+        const reAnalyzeBtn = document.getElementById('re-analyze-btn');
+
+        // Map Elements
+        const mapLoader = document.getElementById('map-loader');
+        const getLocationBtn = document.getElementById('get-location-btn');
+        const barberList = document.getElementById('barber-list');
+        const barberCount = document.getElementById('barber-count');
+        const manualSearchInput = document.getElementById('manual-search-input');
+        const manualSearchBtn = document.getElementById('manual-search-btn');
+        const loaderSearchInput = document.getElementById('loader-search-input');
+        const loaderSearchBtn = document.getElementById('loader-search-btn');
+
+        let uploadedBase64 = null;
+        let map = null;
+        let userMarker = null;
+        let barberMarkersGroup = null; // Menyimpan kumpulan penanda barber agar mudah dibersihkan
+
+        // --- Custom Toast Notification ---
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMessage.textContent = message;
+
+            if (type === 'error') {
+                toast.classList.add('border-red-500');
+                toast.classList.remove('border-gold-500');
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-red-500 text-lg';
+            } else if (type === 'success') {
+                toast.classList.add('border-emerald-500');
+                toast.classList.remove('border-gold-500');
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-500 text-lg';
+            } else {
+                toast.classList.add('border-gold-500');
+                toast.classList.remove('border-red-500', 'border-emerald-500');
+                toastIcon.className = 'fa-solid fa-circle-info text-gold-500 text-lg';
+            }
+
+            toast.classList.remove('translate-y-[-100px]', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-100px]', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 4000);
+        }
+
+        // --- Drag & Drop Event Listeners ---
+        dropzone.addEventListener('click', () => {
+            if (!uploadedBase64) fileInput.click();
+        });
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('border-gold-500', 'bg-gold-50/20');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('border-gold-500', 'bg-gold-50/20');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-gold-500', 'bg-gold-50/20');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFile(file);
+            } else {
+                showToast('Hanya mendukung format file gambar!', 'error');
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        function handleFile(file) {
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('Ukuran file maksimal adalah 10MB.', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                uploadedBase64 = e.target.result;
+                
+                // Show Image Preview
+                imagePreview.src = uploadedBase64;
+                uploadPrompt.classList.add('hidden');
+                previewContainer.classList.remove('hidden');
+
+                // Enable Action Button
+                analyzeBtn.disabled = false;
+                analyzeBtn.classList.remove('bg-slate-200', 'text-slate-500', 'cursor-not-allowed');
+                analyzeBtn.classList.add('bg-gradient-to-r', 'from-gold-500', 'to-amber-500', 'text-navy-950', 'hover:from-gold-600', 'hover:to-amber-600', 'shadow-lg', 'shadow-gold-500/20');
+
+                showToast('Foto berhasil dimuat. Siap untuk dianalisis!', 'success');
+            }
+            reader.readAsDataURL(file);
+        }
+
+        // --- Gemini API Key & Logic ---
+        const apiKey = ""; // Diset kosong secara default, dilingkungan preview key akan otomatis terpasang
+
+        async function fetchAIAnalysis(base64Image) {
+            // Bersihkan data URL prefix untuk kebutuhan payload Gemini
+            const cleanBase64 = base64Image.split(',')[1];
+            
+            const systemPrompt = `Kamu adalah pakar stylist rambut pria profesional internasional, berfokus khusus pada gaya potongan rambut modern Korea (Oppa Style) seperti referensi poster.
+            Misi kamu adalah menganalisis foto wajah pengguna dan memetakan fitur mereka ke salah satu dari 4 gaya rambut terbaik:
+            1. TWO-BLOCK CUT (The Most Recommended, seimbang, rapi, modern, maskulin, clean)
+            2. COMMA HAIR (Soft, natural look, manis, ramping, youthful)
+            3. CURTAIN / MIDDLE PART (Calem, stylish, ilusi wajah lebih pendek & proporsional)
+            4. TEXTURED CROP (Praktis, maskulin, tegas, tajam)
+
+            Kamu HARUS memberikan respons dalam format JSON valid dengan struktur skema persis seperti ini:
+            {
+              "faceShape": "Oval / Bulat / Kotak / Hati / Lonjong",
+              "hairTexture": "Lurus & Tebal / Gelombang / dll",
+              "characteristics": "Garis rahang tegas, dahi sedang, dsb",
+              "lookTags": ["#Clean", "#Soft", "#Natural", "#Fresh", "#Smart", "#Trendy"],
+              "recommendedStyle": "NAMA GAYA GAYA (Two-Block Cut / Comma Hair / Curtain / Middle Part / Textured Crop)",
+              "styleReason": "Alasan singkat mengapa sangat cocok untuk wajahnya berdasarkan poster referensi",
+              "lengthTop": "5-8 cm / dll",
+              "lengthSide": "6-12 mm / dll",
+              "lengthBack": "6-12 mm / dll",
+              "stylingDifficultyStars": 1 hingga 5,
+              "dos": ["Anjuran 1", "Anjuran 2"],
+              "donts": ["Larangan 1", "Larangan 2"]
+            }`;
+
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: "Analisis foto wajah ini dengan sangat mendalam dan kembalikan hanya JSON yang sesuai dengan instruksi." },
+                        { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } }
+                    ]
+                }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            };
+
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            // Implementasi Exponential Backoff Retry (Maksimal 5 Kali)
+            let attempt = 0;
+            const maxAttempts = 5;
+            let delay = 1000;
+
+            while (attempt < maxAttempts) {
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP Error Status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    attempt++;
+                    if (attempt >= maxAttempts) {
+                        throw error;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2; // Gandakan jeda waktu tunggu (Exponential backoff)
+                }
+            }
+        }
+
+        // --- Trigger AI Analysis Process ---
+        analyzeBtn.addEventListener('click', async () => {
+            if (!uploadedBase64) return;
+
+            // UI State: Scanning Mode
+            scanningOverlay.classList.remove('hidden');
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memproses Analisis AI...`;
+
+            try {
+                const responseData = await fetchAIAnalysis(uploadedBase64);
+                
+                // Parse AI JSON response
+                const resultText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!resultText) {
+                    throw new Error("Respons AI kosong.");
+                }
+
+                const result = JSON.parse(resultText);
+                
+                // Populate results to Card UI
+                cardPhoto.src = uploadedBase64;
+                resFaceShape.textContent = result.faceShape || "Oval";
+                resHairTexture.textContent = result.hairTexture || "Lurus";
+                resUniqueFeatures.textContent = result.characteristics || "Normal";
+                resRecommendedStyle.textContent = (result.recommendedStyle || "Two-Block Cut").toUpperCase();
+                resStyleReason.textContent = result.styleReason || "Sangat serasi dengan kontur wajah Anda.";
+
+                // Tags Look
+                resLookTags.innerHTML = "";
+                const tags = result.lookTags || ["#Clean", "#Soft", "#Natural"];
+                tags.forEach(tag => {
+                    const badge = document.createElement('span');
+                    badge.className = "bg-gold-500/10 text-gold-600 text-xs font-bold px-3 py-1 rounded-full border border-gold-500/20";
+                    badge.textContent = tag;
+                    resLookTags.appendChild(badge);
+                });
+
+                // Lengths
+                resLengthTop.textContent = result.lengthTop || "5-8 cm";
+                resLengthSide.textContent = result.lengthSide || "6-12 mm";
+                resLengthBack.textContent = result.lengthBack || "6-12 mm";
+
+                // Star Rating
+                resStylingDifficulty.innerHTML = "";
+                const starsCount = result.stylingDifficultyStars || 3;
+                for (let i = 0; i < 5; i++) {
+                    const star = document.createElement('i');
+                    star.className = i < starsCount ? "fa-solid fa-star" : "fa-regular fa-star";
+                    resStylingDifficulty.appendChild(star);
+                }
+
+                // Do's and Don'ts
+                resDos.innerHTML = "";
+                (result.dos || ["Gunakan produk styling ringan", "Beri volume bagian atas"]).forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    resDos.appendChild(li);
+                });
+
+                resDonts.innerHTML = "";
+                (result.donts || ["Terlalu banyak produk padat", "Samping terlalu tebal"]).forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    resDonts.appendChild(li);
+                });
+
+                // Show Results & Hide Placeholder
+                resultsPlaceholder.classList.add('hidden');
+                resultsContainer.classList.remove('hidden');
+                showToast('Analisis selesai! Gaya rambut Oppa terbaikmu telah ditemukan.', 'success');
+
+                // Smooth scroll to results
+                document.getElementById('results-placeholder').scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error("Gagal melakukan analisis AI:", error);
+                showToast('Gagal menganalisis wajah Anda. Coba foto wajah yang lebih terang dan jelas.', 'error');
+            } finally {
+                // Reset UI Action states
+                scanningOverlay.classList.add('hidden');
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = `<i class="fa-solid fa-circle-nodes"></i> Mulai AI Analisis Gaya Rambut`;
+            }
+        });
+
+        // --- Re-Analyze Mode ---
+        reAnalyzeBtn.addEventListener('click', () => {
+            uploadedBase64 = null;
+            fileInput.value = "";
+            previewContainer.classList.add('hidden');
+            uploadPrompt.classList.remove('hidden');
+            imagePreview.src = "";
+            
+            // Reset Button state
+            analyzeBtn.disabled = true;
+            analyzeBtn.className = "w-full mt-6 py-4 px-6 bg-slate-200 text-slate-500 font-bold rounded-2xl transition-all flex items-center justify-center gap-2 cursor-not-allowed";
+            
+            // Hide Results
+            resultsContainer.classList.add('hidden');
+            resultsPlaceholder.classList.remove('hidden');
+
+            document.getElementById('analyzer-section').scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // --- Download Card Feature ---
+        downloadCardBtn.addEventListener('click', () => {
+            const cardElement = document.getElementById('downloadable-card');
+            showToast('Sedang mempersiapkan kartu analisamu...', 'info');
+
+            html2canvas(cardElement, {
+                useCORS: true,
+                scale: 2, // Meningkatkan resolusi gambar hasil unduhan
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `OppaCut-AI-Rekomendasi-${Date.now()}.png`;
+                link.href = imgData;
+                link.click();
+                showToast('Kartu analisis berhasil diunduh!', 'success');
+            }).catch(err => {
+                console.error('Download gagal:', err);
+                showToast('Gagal mengunduh kartu analisis.', 'error');
+            });
+        });
+
+        // --- Geolocation & Live Barbershop Map Finder ---
+        let mapInitialized = false;
+
+        function initMap(lat, lon) {
+            if (mapInitialized && map) {
+                map.setView([lat, lon], 14);
+                if (userMarker) {
+                    userMarker.setLatLng([lat, lon]).bindPopup("<b>Posisi Anda</b>").openPopup();
+                } else {
+                    userMarker = L.marker([lat, lon]).addTo(map).bindPopup("<b>Posisi Anda</b>").openPopup();
+                }
+                return;
+            }
+
+            // Inisialisasi Peta menggunakan OpenStreetMap & Leaflet
+            map = L.map('map').setView([lat, lon], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Inisialisasi layer khusus untuk marker barber
+            barberMarkersGroup = L.layerGroup().addTo(map);
+
+            // Icon kustom untuk penanda lokasi pengguna
+            userMarker = L.marker([lat, lon]).addTo(map)
+                .bindPopup("<b>Posisi Anda Sekarang</b>")
+                .openPopup();
+
+            mapInitialized = true;
+        }
+
+        // Mengambil data real barbershop menggunakan OpenStreetMap Overpass API
+        async function fetchNearbyBarbershops(lat, lon) {
+            const radius = 4000; // Radius pencarian diperlebar ke 4 Kilometer
+            // Query overpass mencari node / point amenity=barber di sekitar koordinat GPS
+            const query = `[out:json];node(around:${radius},${lat},${lon})[amenity=barber];out;`;
+            const endpoint = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+
+            try {
+                const response = await fetch(endpoint);
+                const data = await response.json();
+                return data.elements || [];
+            } catch (err) {
+                console.error("Gagal mendapatkan data overpass:", err);
+                return []; // Kembalikan array kosong jika gagal
+            }
+        }
+
+        // Menghitung jarak lurus kasar antar koordinat dalam Kilometer
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius bumi
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return (R * c).toFixed(1);
+        }
+
+        async function processUserLocation(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            // Sembunyikan layar penutup loader peta
+            mapLoader.classList.add('hidden');
+
+            // Inisialisasi & Update posisi peta
+            initMap(lat, lon);
+
+            showToast('Lokasi berhasil dideteksi. Mencari barbershop terdekat...', 'info');
+            await loadBarbershopsForCoordinates(lat, lon);
+        }
+
+        // Proses pengambilan data barbershop & render di peta & sidebar list
+        async function loadBarbershopsForCoordinates(lat, lon) {
+            // Hapus marker barber sebelumnya dari map jika ada
+            if (barberMarkersGroup) {
+                barberMarkersGroup.clearLayers();
+            }
+
+            const shops = await fetchNearbyBarbershops(lat, lon);
+            
+            // Bersihkan daftar barber UI sebelumnya
+            barberList.innerHTML = "";
+
+            if (shops.length === 0) {
+                barberCount.textContent = "0 Ditemukan";
+                barberCount.className = "bg-rose-100 text-rose-800 text-xs font-bold px-2.5 py-1 rounded-full";
+                barberList.innerHTML = `
+                    <div class="text-center py-12 text-slate-400 text-xs flex flex-col items-center justify-center">
+                        <i class="fa-solid fa-triangle-exclamation text-3xl mb-3 text-amber-500"></i>
+                        <p class="font-bold">Barbershop Tidak Ditemukan</p>
+                        <p class="mt-1">Tidak ada data barbershop terdaftar di OpenStreetMap sekitar radius 4KM wilayah koordinat ini.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            barberCount.textContent = `${shops.length} Ditemukan`;
+            barberCount.className = "bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full";
+
+            // Loop and render shops to map & list
+            shops.forEach((shop, index) => {
+                const shopName = shop.tags.name || `Barbershop Tanpa Nama #${index + 1}`;
+                const distance = calculateDistance(lat, lon, shop.lat, shop.lon);
+                
+                // Tambahkan penanda emas ke peta untuk tiap Barber
+                const barberIcon = L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                });
+
+                const marker = L.marker([shop.lat, shop.lon], { icon: barberIcon })
+                    .bindPopup(`<b>${shopName}</b><br>Jarak: ${distance} km`);
+                
+                barberMarkersGroup.addLayer(marker);
+
+                // Create Card element in sidebar list
+                const shopCard = document.createElement('div');
+                shopCard.className = "p-3.5 bg-slate-50 hover:bg-gold-500/5 border border-slate-200/80 hover:border-gold-500/40 rounded-xl transition-all cursor-pointer flex justify-between items-center group";
+                shopCard.innerHTML = `
+                    <div class="space-y-1">
+                        <h5 class="font-bold text-xs text-navy-950 group-hover:text-gold-600 transition-colors">${shopName}</h5>
+                        <p class="text-[10px] text-slate-500 flex items-center gap-1">
+                            <i class="fa-solid fa-map-pin"></i> Koordinat: ${shop.lat.toFixed(4)}, ${shop.lon.toFixed(4)}
+                        </p>
+                        <p class="text-[10px] font-bold text-gold-600">Terbuka untuk Umum</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="inline-block bg-navy-950 text-gold-400 text-[10px] font-bold px-2.5 py-1 rounded-lg">
+                            ${distance} KM
+                        </span>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${shop.lat},${shop.lon}" target="_blank" class="block text-[10px] text-sky-600 hover:underline font-semibold mt-1">
+                            Petunjuk Rute <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </a>
+                    </div>
+                `;
+
+                // Interaksi jika klik list, arahkan peta ke lokasi barber tersebut
+                shopCard.addEventListener('click', () => {
+                    map.setView([shop.lat, shop.lon], 16);
+                    marker.openPopup();
+                });
+
+                barberList.appendChild(shopCard);
+            });
+
+            showToast(`Peta diperbarui! Ditemukan ${shops.length} barbershop terdekat.`, 'success');
+        }
+
+        // --- Manual City/Location Search (Geocoding) ---
+        async function handleManualSearch(query) {
+            if (!query || query.trim() === "") {
+                showToast('Silakan masukkan nama kota atau daerah terlebih dahulu.', 'error');
+                return;
+            }
+
+            showToast(`Mencari koordinat untuk "${query}"...`, 'info');
+
+            try {
+                // Fetch data dari Nominatim OpenStreetMap (Gratis & No API Key)
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+
+                    // Sembunyikan loader peta jika masih terbuka
+                    mapLoader.classList.add('hidden');
+
+                    // Set peta ke lokasi hasil pencarian
+                    initMap(lat, lon);
+                    
+                    // Ambil daftar barbershop di sekeliling wilayah baru tersebut
+                    await loadBarbershopsForCoordinates(lat, lon);
+                    
+                    showToast(`Berhasil menemukan lokasi "${query}".`, 'success');
+                } else {
+                    showToast(`Gaya kota atau lokasi "${query}" tidak ditemukan.`, 'error');
+                }
+            } catch (err) {
+                console.error("Gagal melakukan geocoding:", err);
+                showToast('Gagal menghubungkan ke layanan pencarian peta OpenStreetMap.', 'error');
+            }
+        }
+
+        // Event listener untuk tombol cari di bar pencarian persisten
+        manualSearchBtn.addEventListener('click', () => {
+            handleManualSearch(manualSearchInput.value);
+        });
+        manualSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleManualSearch(manualSearchInput.value);
+        });
+
+        // Event listener untuk tombol cari di dalam overlay loader (jika GPS terblokir)
+        loaderSearchBtn.addEventListener('click', () => {
+            handleManualSearch(loaderSearchInput.value);
+        });
+        loaderSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleManualSearch(loaderSearchInput.value);
+        });
+
+        // --- GPS Error Handling ---
+        function handleLocationError(error) {
+            let errorMsg = "Deteksi GPS dibatasi atau diblokir oleh browser.";
+            if (error.code === 1) {
+                errorMsg = "Izin lokasi ditolak oleh pengguna.";
+            } else if (error.code === 2) {
+                errorMsg = "Posisi GPS tidak tersedia saat ini.";
+            } else if (error.code === 3) {
+                errorMsg = "Waktu tunggu deteksi GPS habis.";
+            }
+            
+            console.warn("Kesalahan deteksi GPS:", errorMsg);
+            showToast(`${errorMsg} Silakan gunakan bilah pencarian kota secara manual.`, 'error');
+            
+            // Auto Fallback ke Kota Jakarta, Indonesia agar peta tidak kosong sama sekali
+            const defaultLat = -6.2088;
+            const defaultLon = 106.8456;
+            
+            // Tampilkan peta default, tetapi jangan tutup loader langsung, 
+            // agar pengguna tahu mereka bisa mencari manual di input loader.
+            initMap(defaultLat, defaultLon);
+            loadBarbershopsForCoordinates(defaultLat, defaultLon);
+        }
+
+        // Trigger deteksi GPS saat klik tombol
+        getLocationBtn.addEventListener('click', () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(processUserLocation, handleLocationError, {
+                    enableHighAccuracy: true,
+                    timeout: 8000,
+                    maximumAge: 0
+                });
+            } else {
+                showToast('Browser Anda tidak mendukung layanan deteksi lokasi (GPS).', 'error');
+            }
+        });
+    </script>
+</body>
+</html>
